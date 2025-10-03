@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Panel de Administración - Inmobiliaria RG</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/css/admin.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+	</head>
+	<body class="admin-page">
+		<div id="page-wrapper">
+			<header id="admin-header">
+				<div class="header-content">
+					<h1><a href="index.html">Inmobiliaria RG - Panel Admin</a></h1>
+					<div class="admin-info">
+						<span id="admin-username">Daniel Martinez</span>
+						<button id="logout-btn" class="btn-logout">Cerrar Sesión</button>
+					</div>
+				</div>
+			</header>
+
+			<main id="admin-main">
+				<div class="container">
+					<div class="admin-header">
+						<h2>Gestión de Propiedades</h2>
+						<button id="add-property-btn" class="btn-primary">
+							<i class="fas fa-plus"></i> Agregar Nueva Propiedad
+						</button>
+					</div>
+
+					<!-- Tabs de categorías -->
+					<div class="category-tabs">
+						<button class="tab-btn active" data-category="carousel1">Casas en Venta</button>
+						<button class="tab-btn" data-category="carousel2">Apartamentos en Venta</button>
+						<button class="tab-btn" data-category="carousel3">Casas en Alquiler</button>
+						<button class="tab-btn" data-category="carousel4">Apartamentos en Alquiler</button>
+						<button class="tab-btn" data-category="carousel5">Locales Comerciales</button>
+						<button class="tab-btn" data-category="carousel6">Terrenos</button>
+						<button class="tab-btn" data-category="carousel7">Propiedades de Lujo</button>
+						<button class="tab-btn" data-category="carousel8">Inversiones</button>
+						<button class="tab-btn" data-category="carousel9">Propiedades Rurales</button>
+						<button class="tab-btn" data-category="carousel10">Proyectos en Desarrollo</button>
+					</div>
+
+					<!-- Lista de propiedades -->
+					<div id="properties-list" class="properties-grid">
+						<!-- Las propiedades se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</main>
+		</div>
+
+		<!-- Modal para agregar/editar propiedades -->
+		<div id="property-modal" class="modal">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="modal-title">Agregar Nueva Propiedad</h3>
+					<button class="close-btn" onclick="closeModal()">&times;</button>
+				</div>
+				<form id="property-form" class="property-form">
+					<input type="hidden" id="property-id" />
+					
+					<div class="form-row">
+						<div class="form-group">
+							<label for="property-category">Categoría:</label>
+							<select id="property-category" required>
+								<option value="carousel1">Casas en Venta</option>
+								<option value="carousel2">Apartamentos en Venta</option>
+								<option value="carousel3">Casas en Alquiler</option>
+								<option value="carousel4">Apartamentos en Alquiler</option>
+								<option value="carousel5">Locales Comerciales</option>
+								<option value="carousel6">Terrenos</option>
+							</select>
+						</div>
+						
+						<div class="form-group">
+							<label for="property-title">Título:</label>
+							<input type="text" id="property-title" required placeholder="Ej: Casa Moderna">
+						</div>
+					</div>
+
+					<div class="form-row">
+						<div class="form-group">
+							<label for="property-description">Descripción:</label>
+							<input type="text" id="property-description" required placeholder="Ej: 3 dormitorios, 2 baños">
+						</div>
+						
+						<div class="form-group">
+							<label for="property-price">Precio:</label>
+							<input type="text" id="property-price" required placeholder="Ej: $150,000 o $800/mes">
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="property-images">Imágenes (máximo 15):</label>
+						<input type="file" id="property-images" accept="image/*" multiple />
+						<div class="upload-info">
+							<small>Puedes seleccionar hasta 15 imágenes. Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples archivos.</small>
+							<div class="upload-tips">
+								<strong>Consejos:</strong>
+								<ul>
+									<li>La primera imagen será la principal</li>
+									<li>Incluye fotos de exterior, interior, cocina, baños, etc.</li>
+									<li>Formatos admitidos: JPG, PNG, GIF</li>
+								</ul>
+							</div>
+						</div>
+						<div id="images-preview" class="images-preview"></div>
+					</div>
+
+					<div class="form-actions">
+						<button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+						<button type="submit" class="btn-primary">Guardar Propiedad</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Scripts -->
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/admin.js"></script>
+	</body>
+</html>

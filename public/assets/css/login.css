@@ -1,0 +1,172 @@
+/* Estilos para la página de Login */
+
+.login-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-page #page-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.login-page #header {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 1em 0;
+}
+
+.login-page #header h1 a {
+    color: white;
+    text-decoration: none;
+}
+
+.login-page #header nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5em 1em;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+.login-page #header nav a:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#login-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2em;
+}
+
+.login-container {
+    background: white;
+    padding: 3em;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    max-width: 450px;
+    width: 100%;
+    text-align: center;
+}
+
+.login-header h2 {
+    color: #333;
+    margin-bottom: 0.5em;
+    font-size: 2em;
+    font-weight: 300;
+}
+
+.login-header p {
+    color: #666;
+    margin-bottom: 2em;
+}
+
+.login-form {
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 1.5em;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5em;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8em;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.btn-login {
+    width: 100%;
+    padding: 0.8em;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, #357abd, #2c5f8a);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+}
+
+.error-message {
+    background: #ff4757;
+    color: white;
+    padding: 0.8em;
+    border-radius: 5px;
+    margin-top: 1em;
+    text-align: center;
+}
+
+.login-info {
+    margin-top: 2em;
+    padding: 1.5em;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #4a90e2;
+}
+
+.login-info p {
+    margin: 0.3em 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.login-info p:first-child {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Responsivo */
+@media screen and (max-width: 768px) {
+    .login-container {
+        padding: 2em;
+        margin: 1em;
+    }
+    
+    .login-header h2 {
+        font-size: 1.7em;
+    }
+    
+    #login-section {
+        padding: 1em;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .login-container {
+        padding: 1.5em;
+    }
+    
+    .login-header h2 {
+        font-size: 1.5em;
+    }
+}

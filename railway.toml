@@ -1,0 +1,12 @@
+# Railway Configuration
+# Este archivo le dice a Railway cómo deployar tu aplicación
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/"
+
+[env]
+NODE_ENV = "production"

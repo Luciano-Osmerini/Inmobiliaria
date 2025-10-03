@@ -1,0 +1,11 @@
+# Archivos a ignorar en el deploy
+node_modules/
+.env
+*.log
+.DS_Store
+.vscode/
+*.local
+.cache/
+dist/
+build/
+temp/

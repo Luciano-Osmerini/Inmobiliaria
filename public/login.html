@@ -1,0 +1,99 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Login - Inmobiliaria RG</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/css/login.css" />
+	</head>
+	<body class="login-page">
+		<div id="page-wrapper">
+			<header id="header">
+				<h1><a href="index.html">Inmobiliaria RG</a></h1>
+				<nav id="nav">
+					<ul>
+						<li><a href="index.html">Volver al Inicio</a></li>
+					</ul>
+				</nav>
+			</header>
+
+			<section id="login-section">
+				<div class="container">
+					<div class="login-container">
+						<div class="login-header">
+							<h2>Panel de Administración</h2>
+							<p>Ingresa tus credenciales para acceder al sistema</p>
+						</div>
+						
+						<form id="loginForm" class="login-form">
+							<div class="form-group">
+								<label for="username">Usuario:</label>
+								<input type="text" id="username" name="username" required placeholder="Ingresa tu usuario">
+							</div>
+							
+							<div class="form-group">
+								<label for="password">Contraseña:</label>
+								<input type="password" id="password" name="password" required placeholder="Ingresa tu contraseña">
+							</div>
+							
+							<div class="form-group">
+								<button type="submit" class="btn-login">Iniciar Sesión</button>
+							</div>
+							
+							<div id="error-message" class="error-message" style="display: none;">
+								Usuario o contraseña incorrectos
+							</div>
+						</form>
+						
+						<div class="login-info">
+							<p><strong>Credenciales de acceso:</strong></p>
+							<p>Usuario: Daniel Martinez</p>
+							<p>Contraseña: Daniel Martinez</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<!-- Scripts -->
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/api-integration.js"></script>
+		<script>
+			$(document).ready(function() {
+				$('#loginForm').on('submit', async function(e) {
+					e.preventDefault();
+					
+					const username = $('#username').val().trim();
+					const password = $('#password').val().trim();
+					
+					// Validar que se ingresen datos
+					if (!username || !password) {
+						$('#error-message').text('Por favor ingresa usuario y contraseña').show();
+						setTimeout(() => $('#error-message').hide(), 3000);
+						return;
+					}
+					
+					try {
+						// Intentar login con API
+						const response = await API.login({ username, password });
+						
+						if (response.success !== false) {
+							// Login exitoso - redirigir al panel admin
+							window.location.href = 'admin.html';
+						}
+					} catch (error) {
+						console.error('Login error:', error);
+						$('#error-message').text(error.message || 'Usuario o contraseña incorrectos').show();
+						setTimeout(() => $('#error-message').hide(), 3000);
+					}
+				});
+				
+				// Si ya está logueado, redirigir
+				if (isAuthenticated()) {
+					window.location.href = 'admin.html';
+				}
+			});
+		</script>
+	</body>
+</html>
