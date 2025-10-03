@@ -18,6 +18,13 @@ const dbConfig = process.env.DATABASE_URL ? {
 
 async function initializeDatabase() {
     try {
+        // Log de diagnóstico (NO mostrar credenciales)
+        if (process.env.DATABASE_URL) {
+            console.log('🔌 DB: using DATABASE_URL for connection (postgres).');
+        } else {
+            console.log(`🔌 DB: using host ${dbConfig.host}:${dbConfig.port} (env DB_HOST/DB_PORT).`);
+        }
+
         // Crear pool de conexiones PostgreSQL
         pool = new Pool(dbConfig);
 
@@ -30,7 +37,16 @@ async function initializeDatabase() {
         console.log('✅ Base de datos PostgreSQL inicializada correctamente');
         return pool;
     } catch (error) {
-        console.error('❌ Error al inicializar la base de datos:', error);
+        console.error('❌ Error al inicializar la base de datos:', error && error.message ? error.message : error);
+
+        // Mensaje de ayuda si parece ser falta de configuración
+        if (!process.env.DATABASE_URL) {
+            console.error('→ No se detectó DATABASE_URL. Si estás usando Render, agrega/asegura una base de datos PostgreSQL y vincúlala al servicio para exponer DATABASE_URL.');
+            console.error('→ Alternativamente, configura DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME en Environment.');
+        } else {
+            console.error('→ DATABASE_URL está presente. Verifica que la base de datos exista y acepte conexiones desde Render (comprueba estado en Render Dashboard).');
+        }
+
         throw error;
     }
 }
@@ -97,7 +113,7 @@ async function createTables() {
 
         console.log('✅ Tablas creadas/verificadas correctamente');
     } catch (error) {
-        console.error('❌ Error al crear tablas:', error);
+        console.error('❌ Error al crear tablas:', error && error.message ? error.message : error);
         throw error;
     }
 }
