@@ -191,4 +191,4 @@ Para soporte técnico, contactar al desarrollador o revisar los logs en Railway 
 
 ---
 
-**Desarrollado para Inmobiliaria RG - Daniel Martinez**
+**Desarrollado para Inmobiliaria RG - Daniel Martinez**# Deploy trigger
