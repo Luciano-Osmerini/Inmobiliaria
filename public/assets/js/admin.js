@@ -559,16 +559,13 @@ async function deleteProperty(category, propertyId) {
     }
 }
 
-// Guardar datos en localStorage
+// Funciones obsoletas - ahora usamos la API
 function savePropertiesData() {
-    localStorage.setItem('propertiesData', JSON.stringify(propertiesData));
+    console.warn('savePropertiesData is deprecated - data is saved automatically via API');
 }
 
-// Actualizar carruseles en el sitio web
 function updateWebsiteCarousels() {
-    // Esta función se ejecutaría en el sitio principal
-    // Por ahora solo guardamos los datos para que se reflejen cuando se recargue
-    console.log('Datos de propiedades actualizados');
+    console.warn('updateWebsiteCarousels is deprecated - frontend reloads from API automatically');
 }
 
 // Cerrar modal al hacer clic fuera

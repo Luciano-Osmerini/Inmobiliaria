@@ -10,15 +10,35 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDynamicProperties();
 });
 
-// Cargar propiedades dinámicas desde localStorage
-function loadDynamicProperties() {
-    const savedData = localStorage.getItem('propertiesData');
+// Cargar propiedades dinámicas desde la API
+async function loadDynamicProperties() {
     let propertiesData = {};
     
-    if (savedData) {
-        propertiesData = JSON.parse(savedData);
-    } else {
-        // Cargar propiedades por defecto
+    try {
+        // Intentar cargar desde la API del backend
+        if (typeof API !== 'undefined') {
+            const response = await API.getAllProperties();
+            const properties = response.data || [];
+            
+            // Organizar propiedades por categoría
+            propertiesData = {
+                carousel1: [], carousel2: [], carousel3: [],
+                carousel4: [], carousel5: [], carousel6: []
+            };
+            
+            properties.forEach(property => {
+                if (propertiesData[property.category]) {
+                    propertiesData[property.category].push(property);
+                }
+            });
+        } else {
+            // Fallback: cargar propiedades por defecto si no hay API
+            console.warn('API not available, loading default properties');
+            propertiesData = getDefaultProperties();
+        }
+    } catch (error) {
+        console.error('Error loading properties from API:', error);
+        // Fallback: cargar propiedades por defecto en caso de error
         propertiesData = getDefaultProperties();
     }
     
@@ -370,12 +390,10 @@ function refreshCarousels() {
     loadDynamicProperties();
 }
 
-// Escuchar cambios en localStorage (para actualización en tiempo real)
-window.addEventListener('storage', function(e) {
-    if (e.key === 'propertiesData') {
-        loadDynamicProperties();
-    }
-});
+// Función global para recargar propiedades (llamada desde el admin cuando se hacen cambios)
+window.reloadProperties = function() {
+    loadDynamicProperties();
+};
 
 // Cambiar imagen principal de una propiedad
 function changePropertyImage(thumbnail, index) {
