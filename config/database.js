@@ -1,16 +1,19 @@
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 
-let connection;
+let pool;
 
-// Configuración de conexión
-const dbConfig = {
+// Configuración de conexión para PostgreSQL
+const dbConfig = process.env.DATABASE_URL ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+} : {
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'inmobiliaria_rg',
-    charset: 'utf8mb4',
-    timezone: '+00:00'
+    database: process.env.DB_NAME || 'inmobiliaria_rg'
 };
 
 // Para Railway - usar DATABASE_URL si está disponible
@@ -25,27 +28,14 @@ if (process.env.DATABASE_URL) {
 
 async function initializeDatabase() {
     try {
-        // Conectar a MySQL (sin especificar base de datos primero)
-        const tempConnection = await mysql.createConnection({
-            host: dbConfig.host,
-            port: dbConfig.port,
-            user: dbConfig.user,
-            password: dbConfig.password,
-            charset: 'utf8mb4'
-        });
-
-        // Crear la base de datos si no existe
-        await tempConnection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-        await tempConnection.end();
-
-        // Conectar a la base de datos específica
-        connection = await mysql.createConnection(dbConfig);
+        // Crear pool de conexiones PostgreSQL
+        pool = new Pool(dbConfig);
         
         // Crear tablas si no existen
         await createTables();
         
-        console.log('✅ Base de datos inicializada correctamente');
-        return connection;
+        console.log('✅ Base de datos PostgreSQL inicializada correctamente');
+        return pool;
     } catch (error) {
         console.error('❌ Error al inicializar la base de datos:', error);
         throw error;
