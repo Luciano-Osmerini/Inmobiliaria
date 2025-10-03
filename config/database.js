@@ -10,7 +10,7 @@ const dbConfig = process.env.DATABASE_URL ? {
     }
 } : {
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'inmobiliaria_rg'
@@ -18,9 +18,10 @@ const dbConfig = process.env.DATABASE_URL ? {
 
 async function initializeDatabase() {
     try {
+        // Crear pool de conexiones PostgreSQL
         pool = new Pool(dbConfig);
 
-        // Verificar conexión rápida
+        // Probar conexión
         await pool.query('SELECT 1');
 
         // Crear tablas si no existen
@@ -36,33 +37,37 @@ async function initializeDatabase() {
 
 async function createTables() {
     try {
-        // Usuarios
+        // Tabla de usuarios (para autenticación del admin)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
-                role VARCHAR(10) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
+                role VARCHAR(20) DEFAULT 'user',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
         `);
 
-        // Propiedades
+        // Tabla de propiedades
         await pool.query(`
             CREATE TABLE IF NOT EXISTS properties (
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(255) NOT NULL,
                 description TEXT,
                 price VARCHAR(100) NOT NULL,
-                category VARCHAR(20) NOT NULL CHECK (category IN ('carousel1','carousel2','carousel3','carousel4','carousel5','carousel6')),
-                status VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active','inactive','sold','rented')),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
+                category VARCHAR(50) NOT NULL,
+                status VARCHAR(20) DEFAULT 'active',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
         `);
 
-        // Imágenes
+        // Índices para propiedades
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_properties_category ON properties(category);`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);`);
+
+        // Tabla de imágenes de propiedades
         await pool.query(`
             CREATE TABLE IF NOT EXISTS property_images (
                 id SERIAL PRIMARY KEY,
@@ -74,25 +79,19 @@ async function createTables() {
                 mime_type VARCHAR(100),
                 is_main BOOLEAN DEFAULT FALSE,
                 sort_order INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT NOW()
-            )
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
         `);
 
-        // Índices
-        await pool.query(`CREATE INDEX IF NOT EXISTS idx_category ON properties (category)`);
-        await pool.query(`CREATE INDEX IF NOT EXISTS idx_status ON properties (status)`);
-        await pool.query(`CREATE INDEX IF NOT EXISTS idx_property_id ON property_images (property_id)`);
-        await pool.query(`CREATE INDEX IF NOT EXISTS idx_is_main ON property_images (is_main)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_property_images_property_id ON property_images(property_id);`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_property_images_is_main ON property_images(is_main);`);
 
         // Insertar usuario admin por defecto si no existe
-        const { rows } = await pool.query('SELECT id FROM users WHERE username = $1', ['Daniel Martinez']);
-        if (rows.length === 0) {
+        const res = await pool.query('SELECT id FROM users WHERE username = $1', ['Daniel Martinez']);
+        if (res.rows.length === 0) {
             const bcrypt = require('bcryptjs');
             const hashedPassword = await bcrypt.hash('Daniel Martinez', 10);
-            await pool.query(
-                'INSERT INTO users (username, password, role) VALUES ($1, $2, $3)',
-                ['Daniel Martinez', hashedPassword, 'admin']
-            );
+            await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3)', ['Daniel Martinez', hashedPassword, 'admin']);
             console.log('✅ Usuario admin creado: Daniel Martinez / Daniel Martinez');
         }
 
@@ -103,10 +102,12 @@ async function createTables() {
     }
 }
 
-function getPool() {
-    if (!pool) throw new Error('Base de datos no inicializada');
+function getConnection() {
+    if (!pool) {
+        throw new Error('Base de datos no inicializada');
+    }
     return pool;
 }
 
 module.exports = initializeDatabase;
-module.exports.getPool = getPool;
+module.exports.getConnection = getConnection;
