@@ -234,9 +234,24 @@ function updateCarouselContent(carouselId, properties) {
     properties.forEach(property => {
         const slide = document.createElement('div');
         slide.className = 'carousel-slide';
-        
-        // Manejar múltiples imágenes o imagen única
-        const images = property.images || [property.image || 'https://via.placeholder.com/400x300/666/ffffff?text=Imagen+No+Disponible'];
+
+        // Normalizar imágenes: la API puede devolver objetos con { filename, url, file_path }
+        let images = [];
+        if (Array.isArray(property.images) && property.images.length > 0) {
+            images = property.images.map(img => {
+                if (!img) return null;
+                if (typeof img === 'string') return img;
+                // img puede ser un objeto devuelto por la API
+                return img.url || img.file_path || (img.filename ? `/uploads/${img.filename}` : null);
+            }).filter(Boolean);
+        } else if (property.image) {
+            images = [property.image];
+        }
+
+        if (images.length === 0) {
+            images = ['https://via.placeholder.com/400x300/666/ffffff?text=Imagen+No+Disponible'];
+        }
+
         const firstImage = images[0];
         const hasMultipleImages = images.length > 1;
         
