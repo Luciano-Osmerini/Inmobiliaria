@@ -444,45 +444,47 @@ function displayExistingImages(images) {
 }
 
 // Guardar propiedad
-function saveProperty() {
+async function saveProperty() {
     const propertyId = $('#property-id').val();
     const category = $('#property-category').val();
     const title = $('#property-title').val().trim();
     const description = $('#property-description').val().trim();
     const price = $('#property-price').val().trim();
+    const imagesInput = $('#property-images')[0];
     
     if (!title || !description || !price) {
         alert('Por favor completa todos los campos obligatorios.');
         return;
     }
     
-    // Crear objeto propiedad
-    const property = {
-        id: propertyId || generateId(category),
+    // Crear objeto propiedad para la API
+    const propertyData = {
         title: title,
         description: description,
         price: price,
-        images: []
+        category: category,
+        images: imagesInput.files // Archivos de imágenes
     };
     
-    // Procesar imágenes
-    if (currentImages.length === 0) {
-        // Sin imágenes - usar placeholder
-        property.images = ['https://via.placeholder.com/400x300/666/ffffff?text=Sin+Imagen'];
-        savePropertyToData(property, category, propertyId);
-    } else {
-        // Procesar imágenes existentes y nuevas
-        const imagesToProcess = currentImages.filter(img => !img.existing);
-        const existingImages = currentImages.filter(img => img.existing).map(img => img.src);
-        
-        if (imagesToProcess.length === 0) {
-            // Solo imágenes existentes
-            property.images = existingImages;
-            savePropertyToData(property, category, propertyId);
+    try {
+        let result;
+        if (propertyId) {
+            // Actualizar propiedad existente
+            result = await API.updateProperty(propertyId, propertyData);
+            alert('Propiedad actualizada correctamente.');
         } else {
-            // Procesar nuevas imágenes
-            processNewImages(imagesToProcess, existingImages, property, category, propertyId);
+            // Crear nueva propiedad
+            result = await API.createProperty(propertyData);
+            alert('Propiedad creada correctamente.');
         }
+        
+        // Recargar la lista de propiedades
+        await loadProperties();
+        closeModal();
+        
+    } catch (error) {
+        console.error('Error saving property:', error);
+        alert('Error al guardar la propiedad: ' + error.message);
     }
 }
 
@@ -508,36 +510,10 @@ function processNewImages(newImages, existingImages, property, category, propert
     });
 }
 
-// Guardar propiedad en los datos
+// Función obsoleta - ahora se usa la API directamente
 function savePropertyToData(property, category, propertyId) {
-    if (!propertiesData[category]) {
-        propertiesData[category] = [];
-    }
-    
-    if (propertyId) {
-        // Actualizar propiedad existente
-        const index = propertiesData[category].findIndex(p => p.id === propertyId);
-        if (index !== -1) {
-            propertiesData[category][index] = property;
-        }
-    } else {
-        // Agregar nueva propiedad
-        propertiesData[category].push(property);
-    }
-    
-    // Guardar en localStorage
-    savePropertiesData();
-    
-    // Actualizar sitio web
-    updateWebsiteCarousels();
-    
-    // Actualizar vista
-    filterPropertiesByCategory(category);
-    
-    // Cerrar modal
-    closeModal();
-    
-    alert('Propiedad guardada exitosamente!');
+    console.warn('savePropertyToData is deprecated - use API.createProperty/updateProperty instead');
+    // Esta función ya no se usa - se mantiene para compatibilidad
 }
 
 // Generar ID único
@@ -555,21 +531,31 @@ function findProperty(category, propertyId) {
 }
 
 // Editar propiedad
-function editProperty(category, propertyId) {
-    const property = findProperty(category, propertyId);
-    if (property) {
-        openModal(property, category);
+async function editProperty(category, propertyId) {
+    try {
+        const response = await API.getProperty(propertyId);
+        const property = response.data;
+        if (property) {
+            openModal(property, category);
+        }
+    } catch (error) {
+        console.error('Error loading property for edit:', error);
+        alert('Error al cargar la propiedad para editar: ' + error.message);
     }
 }
 
 // Eliminar propiedad
-function deleteProperty(category, propertyId) {
+async function deleteProperty(category, propertyId) {
     if (confirm('¿Estás seguro de que deseas eliminar esta propiedad?')) {
-        propertiesData[category] = propertiesData[category].filter(p => p.id !== propertyId);
-        savePropertiesData();
-        updateWebsiteCarousels();
-        filterPropertiesByCategory(category);
-        alert('Propiedad eliminada exitosamente!');
+        try {
+            await API.deleteProperty(propertyId);
+            alert('Propiedad eliminada exitosamente!');
+            // Recargar la lista de propiedades
+            await loadProperties();
+        } catch (error) {
+            console.error('Error deleting property:', error);
+            alert('Error al eliminar la propiedad: ' + error.message);
+        }
     }
 }
 
