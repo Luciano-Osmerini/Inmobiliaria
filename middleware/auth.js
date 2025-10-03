@@ -17,13 +17,13 @@ const authenticateToken = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // Verificar que el usuario aún existe en la base de datos
-        const connection = getConnection();
-        const [users] = await connection.execute(
-            'SELECT id, username, role FROM users WHERE id = ? AND username = ?',
+        const pool = getConnection();
+        const result = await pool.query(
+            'SELECT id, username, role FROM users WHERE id = $1 AND username = $2',
             [decoded.userId, decoded.username]
         );
 
-        if (users.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(401).json({ 
                 error: 'Token inválido',
                 message: 'El usuario no existe o ha sido deshabilitado'
@@ -33,7 +33,7 @@ const authenticateToken = async (req, res, next) => {
         req.user = {
             id: decoded.userId,
             username: decoded.username,
-            role: users[0].role
+            role: result.rows[0].role
         };
 
         next();

@@ -9,21 +9,18 @@ const router = express.Router();
 // Obtener todas las propiedades (público)
 router.get('/', async (req, res) => {
     try {
-        const connection = getConnection();
-        
-        const [properties] = await connection.execute(`
-            SELECT 
-                p.*,
-                GROUP_CONCAT(
-                    JSON_OBJECT(
-                        'id', pi.id,
-                        'filename', pi.filename,
-                        'original_name', pi.original_name,
-                        'file_path', pi.file_path,
-                        'is_main', pi.is_main,
-                        'sort_order', pi.sort_order
-                    ) ORDER BY pi.is_main DESC, pi.sort_order ASC
-                ) as images
+        const pool = getConnection();
+
+        const { rows: properties } = await pool.query(`
+            SELECT p.*, 
+                   COALESCE(json_agg(jsonb_build_object(
+                       'id', pi.id,
+                       'filename', pi.filename,
+                       'original_name', pi.original_name,
+                       'file_path', pi.file_path,
+                       'is_main', pi.is_main,
+                       'sort_order', pi.sort_order
+                   ) ORDER BY pi.is_main DESC, pi.sort_order ASC) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images
             FROM properties p
             LEFT JOIN property_images pi ON p.id = pi.property_id
             WHERE p.status = 'active'
@@ -33,10 +30,7 @@ router.get('/', async (req, res) => {
 
         // Procesar las imágenes para cada propiedad
         const processedProperties = properties.map(property => {
-            const images = property.images 
-                ? property.images.split(',').map(img => JSON.parse(img))
-                : [];
-            
+            const images = property.images || [];
             return {
                 ...property,
                 images: images.map(img => ({
@@ -74,34 +68,28 @@ router.get('/category/:category', async (req, res) => {
             });
         }
 
-        const connection = getConnection();
-        
-        const [properties] = await connection.execute(`
-            SELECT 
-                p.*,
-                GROUP_CONCAT(
-                    JSON_OBJECT(
-                        'id', pi.id,
-                        'filename', pi.filename,
-                        'original_name', pi.original_name,
-                        'file_path', pi.file_path,
-                        'is_main', pi.is_main,
-                        'sort_order', pi.sort_order
-                    ) ORDER BY pi.is_main DESC, pi.sort_order ASC
-                ) as images
+        const pool = getConnection();
+
+        const { rows: properties } = await pool.query(`
+            SELECT p.*, 
+                   COALESCE(json_agg(jsonb_build_object(
+                       'id', pi.id,
+                       'filename', pi.filename,
+                       'original_name', pi.original_name,
+                       'file_path', pi.file_path,
+                       'is_main', pi.is_main,
+                       'sort_order', pi.sort_order
+                   ) ORDER BY pi.is_main DESC, pi.sort_order ASC) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images
             FROM properties p
             LEFT JOIN property_images pi ON p.id = pi.property_id
-            WHERE p.category = ? AND p.status = 'active'
+            WHERE p.category = $1 AND p.status = 'active'
             GROUP BY p.id
             ORDER BY p.created_at DESC
         `, [category]);
 
         // Procesar las imágenes para cada propiedad
         const processedProperties = properties.map(property => {
-            const images = property.images 
-                ? property.images.split(',').map(img => JSON.parse(img))
-                : [];
-            
+            const images = property.images || [];
             return {
                 ...property,
                 images: images.map(img => ({
@@ -131,24 +119,21 @@ router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        const connection = getConnection();
-        
-        const [properties] = await connection.execute(`
-            SELECT 
-                p.*,
-                GROUP_CONCAT(
-                    JSON_OBJECT(
-                        'id', pi.id,
-                        'filename', pi.filename,
-                        'original_name', pi.original_name,
-                        'file_path', pi.file_path,
-                        'is_main', pi.is_main,
-                        'sort_order', pi.sort_order
-                    ) ORDER BY pi.is_main DESC, pi.sort_order ASC
-                ) as images
+        const pool = getConnection();
+
+        const { rows: properties } = await pool.query(`
+            SELECT p.*, 
+                   COALESCE(json_agg(jsonb_build_object(
+                       'id', pi.id,
+                       'filename', pi.filename,
+                       'original_name', pi.original_name,
+                       'file_path', pi.file_path,
+                       'is_main', pi.is_main,
+                       'sort_order', pi.sort_order
+                   ) ORDER BY pi.is_main DESC, pi.sort_order ASC) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images
             FROM properties p
             LEFT JOIN property_images pi ON p.id = pi.property_id
-            WHERE p.id = ? AND p.status = 'active'
+            WHERE p.id = $1 AND p.status = 'active'
             GROUP BY p.id
         `, [id]);
 
@@ -210,15 +195,15 @@ router.post('/', authenticateToken, requireAdmin, upload.array('images', 15), as
             });
         }
 
-        const connection = getConnection();
-        
+        const pool = getConnection();
+
         // Insertar propiedad
-        const [result] = await connection.execute(
-            'INSERT INTO properties (title, description, price, category) VALUES (?, ?, ?, ?)',
+        const result = await pool.query(
+            'INSERT INTO properties (title, description, price, category) VALUES ($1, $2, $3, $4) RETURNING id',
             [title, description, price, category]
         );
 
-        const propertyId = result.insertId;
+        const propertyId = result.rows[0].id;
 
         // Procesar imágenes si fueron subidas
         if (req.files && req.files.length > 0) {
@@ -226,10 +211,10 @@ router.post('/', authenticateToken, requireAdmin, upload.array('images', 15), as
                 const file = req.files[i];
                 const isMain = i === 0; // La primera imagen es la principal
                 
-                await connection.execute(
+                await pool.query(
                     `INSERT INTO property_images 
                     (property_id, filename, original_name, file_path, file_size, mime_type, is_main, sort_order) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [
                         propertyId,
                         file.filename,
@@ -272,11 +257,11 @@ router.put('/:id', authenticateToken, requireAdmin, upload.array('images', 15), 
         const { id } = req.params;
         const { title, description, price, category, status } = req.body;
         
-        const connection = getConnection();
-        
+        const pool = getConnection();
+
         // Verificar que la propiedad existe
-        const [existing] = await connection.execute('SELECT id FROM properties WHERE id = ?', [id]);
-        if (existing.length === 0) {
+        const existingRes = await pool.query('SELECT id FROM properties WHERE id = $1', [id]);
+        if (existingRes.rows.length === 0) {
             return res.status(404).json({
                 error: 'Propiedad no encontrada',
                 message: 'La propiedad especificada no existe'
@@ -284,8 +269,8 @@ router.put('/:id', authenticateToken, requireAdmin, upload.array('images', 15), 
         }
 
         // Actualizar propiedad
-        await connection.execute(
-            'UPDATE properties SET title = ?, description = ?, price = ?, category = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        await pool.query(
+            'UPDATE properties SET title = $1, description = $2, price = $3, category = $4, status = $5, updated_at = NOW() WHERE id = $6',
             [title, description, price, category, status || 'active', id]
         );
 
@@ -294,10 +279,10 @@ router.put('/:id', authenticateToken, requireAdmin, upload.array('images', 15), 
             for (let i = 0; i < req.files.length; i++) {
                 const file = req.files[i];
                 
-                await connection.execute(
+                await pool.query(
                     `INSERT INTO property_images 
                     (property_id, filename, original_name, file_path, file_size, mime_type, is_main, sort_order) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [
                         id,
                         file.filename,
@@ -340,18 +325,16 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
-        const connection = getConnection();
-        
+        const pool = getConnection();
+
         // Obtener imágenes para eliminar archivos físicos
-        const [images] = await connection.execute(
-            'SELECT filename, file_path FROM property_images WHERE property_id = ?',
-            [id]
-        );
+        const imagesRes = await pool.query('SELECT filename, file_path FROM property_images WHERE property_id = $1', [id]);
+        const images = imagesRes.rows;
 
         // Eliminar propiedad (esto eliminará automáticamente las imágenes por CASCADE)
-        const [result] = await connection.execute('DELETE FROM properties WHERE id = ?', [id]);
+        const result = await pool.query('DELETE FROM properties WHERE id = $1 RETURNING id', [id]);
         
-        if (result.affectedRows === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({
                 error: 'Propiedad no encontrada',
                 message: 'La propiedad especificada no existe'
@@ -386,13 +369,11 @@ router.delete('/:propertyId/images/:imageId', authenticateToken, requireAdmin, a
     try {
         const { propertyId, imageId } = req.params;
         
-        const connection = getConnection();
-        
+        const pool = getConnection();
+
         // Obtener información de la imagen
-        const [images] = await connection.execute(
-            'SELECT id, filename, file_path, is_main FROM property_images WHERE id = ? AND property_id = ?',
-            [imageId, propertyId]
-        );
+        const imagesRes = await pool.query('SELECT id, filename, file_path, is_main FROM property_images WHERE id = $1 AND property_id = $2', [imageId, propertyId]);
+        const images = imagesRes.rows;
 
         if (images.length === 0) {
             return res.status(404).json({
@@ -400,27 +381,21 @@ router.delete('/:propertyId/images/:imageId', authenticateToken, requireAdmin, a
                 message: 'La imagen especificada no existe'
             });
         }
-
         const image = images[0];
 
         // Eliminar de la base de datos
-        await connection.execute('DELETE FROM property_images WHERE id = ?', [imageId]);
+        await pool.query('DELETE FROM property_images WHERE id = $1', [imageId]);
 
         // Eliminar archivo físico
         deleteFile(image.file_path);
 
         // Si era la imagen principal, asignar otra como principal
         if (image.is_main) {
-            const [otherImages] = await connection.execute(
-                'SELECT id FROM property_images WHERE property_id = ? ORDER BY sort_order ASC LIMIT 1',
-                [propertyId]
-            );
+            const otherImagesRes = await pool.query('SELECT id FROM property_images WHERE property_id = $1 ORDER BY sort_order ASC LIMIT 1', [propertyId]);
+            const otherImages = otherImagesRes.rows;
             
             if (otherImages.length > 0) {
-                await connection.execute(
-                    'UPDATE property_images SET is_main = TRUE WHERE id = ?',
-                    [otherImages[0].id]
-                );
+                await pool.query('UPDATE property_images SET is_main = TRUE WHERE id = $1', [otherImages[0].id]);
             }
         }
 
@@ -447,13 +422,11 @@ router.patch('/:propertyId/images/:imageId/main', authenticateToken, requireAdmi
     try {
         const { propertyId, imageId } = req.params;
         
-        const connection = getConnection();
-        
+        const pool = getConnection();
+
         // Verificar que la imagen existe
-        const [images] = await connection.execute(
-            'SELECT id FROM property_images WHERE id = ? AND property_id = ?',
-            [imageId, propertyId]
-        );
+        const imagesRes = await pool.query('SELECT id FROM property_images WHERE id = $1 AND property_id = $2', [imageId, propertyId]);
+        const images = imagesRes.rows;
 
         if (images.length === 0) {
             return res.status(404).json({
@@ -463,16 +436,10 @@ router.patch('/:propertyId/images/:imageId/main', authenticateToken, requireAdmi
         }
 
         // Quitar la marca de principal de todas las imágenes de esta propiedad
-        await connection.execute(
-            'UPDATE property_images SET is_main = FALSE WHERE property_id = ?',
-            [propertyId]
-        );
+        await pool.query('UPDATE property_images SET is_main = FALSE WHERE property_id = $1', [propertyId]);
 
         // Establecer la nueva imagen principal
-        await connection.execute(
-            'UPDATE property_images SET is_main = TRUE WHERE id = ?',
-            [imageId]
-        );
+        await pool.query('UPDATE property_images SET is_main = TRUE WHERE id = $1', [imageId]);
 
         res.json({
             success: true,

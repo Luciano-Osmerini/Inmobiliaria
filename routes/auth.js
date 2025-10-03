@@ -20,20 +20,20 @@ router.post('/login', async (req, res) => {
         }
 
         // Buscar usuario en la base de datos
-        const connection = getConnection();
-        const [users] = await connection.execute(
-            'SELECT id, username, password, role FROM users WHERE username = ?',
+        const pool = getConnection();
+        const result = await pool.query(
+            'SELECT id, username, password, role FROM users WHERE username = $1',
             [username]
         );
 
-        if (users.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(401).json({
                 error: 'Credenciales inválidas',
                 message: 'Usuario o contraseña incorrectos'
             });
         }
 
-        const user = users[0];
+        const user = result.rows[0];
 
         // Verificar contraseña
         const isPasswordValid = await bcrypt.compare(password, user.password);
