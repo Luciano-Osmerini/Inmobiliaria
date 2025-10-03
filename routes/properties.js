@@ -207,9 +207,11 @@ router.post('/', authenticateToken, requireAdmin, upload.array('images', 15), as
 
         // Procesar imágenes si fueron subidas
         if (req.files && req.files.length > 0) {
+            console.log(`Processing ${req.files.length} uploaded files for property ${propertyId}`);
             for (let i = 0; i < req.files.length; i++) {
                 const file = req.files[i];
                 const isMain = i === 0; // La primera imagen es la principal
+                console.log('Uploaded file:', { filename: file.filename, path: file.path, size: file.size });
                 
                 await pool.query(
                     `INSERT INTO property_images 
@@ -227,6 +229,8 @@ router.post('/', authenticateToken, requireAdmin, upload.array('images', 15), as
                     ]
                 );
             }
+        } else {
+            console.log('No files uploaded in request for property creation');
         }
 
         res.status(201).json({
@@ -276,8 +280,10 @@ router.put('/:id', authenticateToken, requireAdmin, upload.array('images', 15), 
 
         // Procesar nuevas imágenes si fueron subidas
         if (req.files && req.files.length > 0) {
+            console.log(`Processing ${req.files.length} uploaded files for property update ${id}`);
             for (let i = 0; i < req.files.length; i++) {
                 const file = req.files[i];
+                console.log('Uploaded file (update):', { filename: file.filename, path: file.path, size: file.size });
                 
                 await pool.query(
                     `INSERT INTO property_images 
@@ -295,6 +301,8 @@ router.put('/:id', authenticateToken, requireAdmin, upload.array('images', 15), 
                     ]
                 );
             }
+        } else {
+            console.log('No files uploaded in request for property update');
         }
 
         res.json({
