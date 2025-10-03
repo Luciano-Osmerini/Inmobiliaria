@@ -2,32 +2,47 @@
 // Administrador: Daniel Martinez
 
 // Verificar autenticación al cargar
-$(document).ready(function() {
-    checkAuth();
+$(document).ready(async function() {
+    await checkAuth();
     initializeAdmin();
     loadProperties();
 });
 
 // Verificar si el usuario está autenticado
-function checkAuth() {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    const adminUser = localStorage.getItem('adminUser');
-    
-    if (!isLoggedIn || adminUser !== 'Daniel Martinez') {
+async function checkAuth() {
+    if (!isAuthenticated()) {
         alert('Acceso denegado. Serás redirigido al login.');
         window.location.href = 'login.html';
         return;
     }
     
-    $('#admin-username').text(adminUser);
+    try {
+        // Verificar token con el backend
+        await API.verifyToken();
+        const user = getCurrentUser();
+        if (user) {
+            $('#admin-username').text(user.username);
+        }
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        alert('Sesión expirada. Serás redirigido al login.');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+    }
 }
 
 // Inicializar funcionalidades del admin
 function initializeAdmin() {
     // Logout
-    $('#logout-btn').click(function() {
-        localStorage.removeItem('adminLoggedIn');
-        localStorage.removeItem('adminUser');
+    $('#logout-btn').click(async function() {
+        try {
+            await API.logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         window.location.href = 'login.html';
     });
     
@@ -66,18 +81,31 @@ let propertiesData = {
     carousel6: [] // Terrenos
 };
 
-// Cargar propiedades desde localStorage
-function loadProperties() {
-    const savedData = localStorage.getItem('propertiesData');
-    if (savedData) {
-        propertiesData = JSON.parse(savedData);
-    } else {
-        // Cargar propiedades por defecto si no hay datos guardados
-        initializeDefaultProperties();
+// Cargar propiedades desde la API
+async function loadProperties() {
+    try {
+        const response = await API.getAllProperties();
+        const properties = response.data || [];
+        
+        // Organizar propiedades por categoría
+        propertiesData = {
+            carousel1: [], carousel2: [], carousel3: [],
+            carousel4: [], carousel5: [], carousel6: []
+        };
+        
+        properties.forEach(property => {
+            if (propertiesData[property.category]) {
+                propertiesData[property.category].push(property);
+            }
+        });
+        
+        // Mostrar propiedades de la primera categoría
+        filterPropertiesByCategory('carousel1');
+    } catch (error) {
+        console.error('Error loading properties:', error);
+        // Fallback: mostrar mensaje de error
+        $('#properties-list').html('<p class="error-message">Error al cargar las propiedades. Por favor, recarga la página.</p>');
     }
-    
-    // Mostrar propiedades de la primera categoría
-    filterPropertiesByCategory('carousel1');
 }
 
 // Inicializar propiedades por defecto
